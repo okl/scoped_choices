@@ -1,0 +1,60 @@
+require 'scoped_choices'
+
+module ScopedChoices::Rails
+  def self.included(base)
+    base.class_eval do
+      def initialize_with_choices(*args, &block)
+        initialize_without_choices(*args, &block)
+        @choices = Hashie::Mash.new
+      end
+      
+      alias :initialize_without_choices :initialize
+      alias :initialize :initialize_with_choices
+    end
+  end
+  
+  def from_file(name, scope=nil )
+    root = self.respond_to?(:root) ? self.root : Rails.root
+    file = root + 'config' + name
+    
+    settings = ScopedChoices.load_settings(file, Rails.respond_to?(:env) ? Rails.env : RAILS_ENV)
+    if scope
+      scoped_settings = Hashie::Mash.new
+      scoped_settings.send("#{scope}=", settings)
+      settings = scoped_settings
+    end
+    @choices.update settings
+
+    settings.each do |key, value|
+      self.send("#{key}=", value)
+    end
+  end
+  def from_file_with_scope(name, scope)
+    from_file(name, scope)
+  end
+end
+
+if defined? Rails::Application::Configuration
+  Rails::Application::Configuration.send(:include, ScopedChoices::Rails)
+elsif defined? Rails::Configuration
+  Rails::Configuration.class_eval do
+    include ScopedChoices::Rails
+    include Module.new {
+      def respond_to?(method)
+        super or method.to_s =~ /=$/ or (method.to_s =~ /\?$/ and @choices.key?($`))
+      end
+      
+      private
+      
+      def method_missing(method, *args, &block)
+        if method.to_s =~ /=$/ or (method.to_s =~ /\?$/ and @choices.key?($`))
+          @choices.send(method, *args)
+        elsif @choices.key?(method)
+          @choices[method]
+        else
+          super
+        end
+      end
+    }
+  end
+end
