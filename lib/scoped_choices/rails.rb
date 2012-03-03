@@ -13,7 +13,7 @@ module ScopedChoices::Rails
     end
   end
   
-  def from_file_with_scope(name)
+  def from_file_with_scope(name, scope)
     root = self.respond_to?(:root) ? self.root : Rails.root
     file = root + 'config' + name
     
