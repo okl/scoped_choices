@@ -13,7 +13,7 @@ Gem::Specification.new do |gem|
 
   gem.authors  = ['Mislav Marohnić', 'Samer Masry']
   gem.email    = 'samer@onekingslane.com'
-  gem.homepage = 'http://github.com/okl/choices'
+  gem.homepage = 'http://github.com/okl/scoped_choices'
 
   gem.rubyforge_project = nil
   gem.has_rdoc = false
