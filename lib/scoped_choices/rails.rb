@@ -3,17 +3,17 @@ require 'scoped_choices'
 module ScopedChoices::Rails
   def self.included(base)
     base.class_eval do
-      def initialize_with_choices(*args, &block)
-        initialize_without_choices(*args, &block)
-        @choices = Hashie::Mash.new
+      def initialize_with_scoped_choices(*args, &block)
+        initialize_without_scoped_choices(*args, &block)
+        @scoped_choices = Hashie::Mash.new
       end
       
-      alias :initialize_without_choices :initialize
-      alias :initialize :initialize_with_choices
+      alias :initialize_without_scoped_choices :initialize
+      alias :initialize :initialize_with_scoped_choices
     end
   end
   
-  def from_file(name, scope=nil )
+  def from_file_with_scope(name)
     root = self.respond_to?(:root) ? self.root : Rails.root
     file = root + 'config' + name
     
@@ -23,14 +23,11 @@ module ScopedChoices::Rails
       scoped_settings.send("#{scope}=", settings)
       settings = scoped_settings
     end
-    @choices.update settings
+    @scoped_choices.update settings
 
     settings.each do |key, value|
       self.send("#{key}=", value)
     end
-  end
-  def from_file_with_scope(name, scope)
-    from_file(name, scope)
   end
 end
 
@@ -41,16 +38,16 @@ elsif defined? Rails::Configuration
     include ScopedChoices::Rails
     include Module.new {
       def respond_to?(method)
-        super or method.to_s =~ /=$/ or (method.to_s =~ /\?$/ and @choices.key?($`))
+        super or method.to_s =~ /=$/ or (method.to_s =~ /\?$/ and @scoped_choices.key?($`))
       end
       
       private
       
       def method_missing(method, *args, &block)
-        if method.to_s =~ /=$/ or (method.to_s =~ /\?$/ and @choices.key?($`))
-          @choices.send(method, *args)
-        elsif @choices.key?(method)
-          @choices[method]
+        if method.to_s =~ /=$/ or (method.to_s =~ /\?$/ and @scoped_choices.key?($`))
+          @scoped_choices.send(method, *args)
+        elsif @scoped_choices.key?(method)
+          @scoped_choices[method]
         else
           super
         end
