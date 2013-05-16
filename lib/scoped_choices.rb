@@ -28,7 +28,8 @@ module ScopedChoices
   end
   
   def yaml_load(content)
-    if defined? YAML::ENGINE
+    ruby_major_version = RUBY_VERSION.split('.').first.to_i
+    if ruby_major_version < 2 && defined? YAML::ENGINE
       # avoid using broken Psych in 1.9.2
       old_yamler = YAML::ENGINE.yamler
       YAML::ENGINE.yamler = 'syck'
@@ -36,7 +37,9 @@ module ScopedChoices
     begin
       YAML::load(content)
     ensure
-      YAML::ENGINE.yamler = old_yamler if defined? YAML::ENGINE
+      if ruby_major_version < 2 && defined? YAML::ENGINE
+        YAML::ENGINE.yamler = old_yamler
+      end
     end
   end
 end
